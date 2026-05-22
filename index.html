@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YourWallet</title>
+<link rel="shortcut icon" href="assets/cartera.ico" type="image/x-icon">
+
+<!-- Dependencias -->
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- Configuración Tailwind -->
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+      colors: {
+        s: { 50:'#F8FAFC',100:'#F1F5F9',200:'#E2E8F0',300:'#CBD5E1',400:'#94A3B8',500:'#64748B',600:'#475569',700:'#334155',800:'#1E293B',900:'#0F172A' },
+        p: { 50:'#F0FDFA',100:'#CCFBF1',200:'#99F6E4',600:'#0D9488',700:'#0F766E' },
+        ok:'#059669', bad:'#DC2626', warn:'#D97706'
+      },
+      boxShadow: { card:'0 1px 3px rgba(15,23,42,0.06), 0 4px 12px rgba(15,23,42,0.04)', lift:'0 4px 16px rgba(15,23,42,0.08), 0 12px 32px rgba(15,23,42,0.06)', modal:'0 24px 48px rgba(15,23,42,0.12)' }
+    }
+  }
+};
+</script>
+
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  body{font-family:'Inter',system-ui,sans-serif;background:#F8FAFC;color:#1E293B;overflow:hidden}
+  ::-webkit-scrollbar{width:5px;height:5px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:10px}
+  .no-scroll::-webkit-scrollbar{display:none}
+  .no-scroll{-ms-overflow-style:none;scrollbar-width:none}
+  input:focus,select:focus{outline:none;box-shadow:0 0 0 2px rgba(66,133,244,0.25)}
+  input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
+  input[type=number]{-moz-appearance:textfield}
+  .prog{transition:width .5s cubic-bezier(.25,.46,.45,.94)}
+  
+  /* Animaciones */
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes popIn{from{opacity:0;transform:scale(.96) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
+  
+  .view-a{animation:fadeUp .3s ease-out}
+  .mod-a{animation:popIn .3s cubic-bezier(.16,1,.3,1)}
+  
+  @media(min-width:1024px){.mob-nav{display:none!important}}
+  @media(max-width:1023px){.desk-sb{display:none!important}.main-c{padding-bottom:72px}}
+  
+  .nav-on{background:#EFF6FF;color:#4285F4!important}
+  .nav-on i{color:#4285F4!important}
+  
+  /* Estilos para tipos de movimiento */
+  .typ-btn-active{border-width:2px!important;box-shadow:0 0 0 1px rgba(0,0,0,0.05)}
+  .typ-btn-active[data-type="expense"]{border-color:#DC2626!important;background:#FEF2F2!important}
+  .typ-btn-active[data-type="expense"] .typ-icon{background:#DC2626!important;color:#fff!important}
+  .typ-btn-active[data-type="expense"] .typ-label{color:#DC2626!important}
+  
+  .typ-btn-active[data-type="income"]{border-color:#059669!important;background:#ECFDF5!important}
+  .typ-btn-active[data-type="income"] .typ-icon{background:#059669!important;color:#fff!important}
+  .typ-btn-active[data-type="income"] .typ-label{color:#059669!important}
+  
+  .typ-btn-active[data-type="transfer"]{border-color:#4285F4!important;background:#EFF6FF!important}
+  .typ-btn-active[data-type="transfer"] .typ-icon{background:#4285F4!important;color:#fff!important}
+  .typ-btn-active[data-type="transfer"] .typ-label{color:#4285F4!important}
+  
+  .cat-btn-active{border-color:#4285F4!important;background:#EFF6FF!important}
+  .mob-on{color:#4285F4!important}
+
+  /* ═════ PANTALLA DE BIENVENIDA ═════ */
+  #welcome-screen{
+    position:fixed;inset:0;z-index:1000;background:linear-gradient(135deg,#0F172A 0%,#1E293B 100%);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    transition:transform .6s cubic-bezier(.16,1,.3,1);
+  }
+  #welcome-screen.hidden{transform:translateY(-100%)}
+  .welcome-glow{position:absolute;width:300px;height:300px;background:radial-gradient(circle,rgba(13,148,136,.3) 0%,transparent 70%);border-radius:50%;filter:blur(40px);animation:pulse 4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:.8;transform:scale(1.1)}}
+
+  /* Color Preview */
+  .color-preview{width:40px;height:40px;border-radius:12px;border:2px solid #E2E8F0;transition:all .2s}
+  input[type="color"]{width:40px;height:40px;border:none;border-radius:8px;cursor:pointer;background:none;padding:0}
+  input[type="color"]::-webkit-color-swatch-wrapper{padding:0}
+  input[type="color"]::-webkit-color-swatch{border:none;border-radius:8px}
+</style>
+</head>
+<body>
+
+<!-- ═══════ PANTALLA DE BIENVENIDA ═══════ -->
+<div id="welcome-screen">
+  <div class="welcome-glow"></div>
+  <div class="relative z-10 px-6">
+    <div class="w-20 h-20 rounded-2xl bg-white/10 backdrop-blur-sm mx-auto flex items-center justify-center mb-6 border border-white/20">
+      <i class="fa-solid fa-wallet text-3xl text-white"></i>
+    </div>
+    <h1 class="text-3xl md:text-4xl font-bold text-white mb-2" id="welcome-greeting">Buenos días</h1>
+    <p class="text-s-300 text-lg mb-8">Tu dinero, bajo control</p>
+    <button onclick="enterApp()" class="group px-8 py-3.5 bg-white text-s-900 font-semibold rounded-xl hover:bg-s-100 transition flex items-center gap-2 mx-auto shadow-lg">
+      <span>Entrar</span>
+      <i class="fa-solid fa-arrow-down group-hover:translate-y-0.5 transition"></i>
+    </button>
+    <p class="text-s-400 text-xs mt-6 opacity-60">YourWallet • Tus datos se almacenan localmente</p>
+  </div>
+</div>
+
+<div class="flex h-screen overflow-hidden" id="app-container" style="opacity:0;transition:opacity .3s">
+
+  <!-- ══════ SIDEBAR ═══════ -->
+  <aside class="desk-sb w-60 bg-white border-r border-s-200 flex flex-col flex-shrink-0">
+    <div class="px-6 pt-7 pb-5">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-s-900 flex items-center justify-center"><i class="fa-solid fa-wallet text-white"></i></div>
+        <div>
+          <div class="font-bold text-lg text-s-900 tracking-tight">YourWallet</div>
+          <div class="text-[10px] text-s-400 font-medium">GESTIÓN FINANCIERA</div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="flex-1 px-3 space-y-0.5 overflow-y-auto no-scroll">
+      <div class="text-[10px] font-bold text-s-400 uppercase tracking-wider px-4 mb-2">Principal</div>
+      <button data-v="dashboard" class="nav-i w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-s-600 hover:bg-s-100 transition font-medium text-sm"><i class="fa-solid fa-house w-5 text-center"></i><span>Inicio</span></button>
+      <button data-v="transactions" class="nav-i w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-s-600 hover:bg-s-100 transition font-medium text-sm"><i class="fa-solid fa-list-check w-5 text-center"></i><span>Movimientos</span></button>
+      <button data-v="accounts" class="nav-i w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-s-600 hover:bg-s-100 transition font-medium text-sm"><i class="fa-solid fa-credit-card w-5 text-center"></i><span>Cuentas</span></button>
+      <button data-v="budgets" class="nav-i w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-s-600 hover:bg-s-100 transition font-medium text-sm"><i class="fa-solid fa-piggy-bank w-5 text-center"></i><span>Presupuestos</span></button>
+      <button data-v="analytics" class="nav-i w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-s-600 hover:bg-s-100 transition font-medium text-sm"><i class="fa-solid fa-chart-pie w-5 text-center"></i><span>Analíticas</span></button>
+      <div class="text-[10px] font-bold text-s-400 uppercase tracking-wider px-4 mb-2 mt-6">Sistema</div>
+      <button data-v="settings" class="nav-i w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-s-600 hover:bg-s-100 transition font-medium text-sm"><i class="fa-solid fa-gear w-5 text-center"></i><span>Ajustes</span></button>
+    </nav>
+
+    <div class="p-4 border-t border-s-200">
+      <div class="text-[10px] text-s-300 text-center">v2.0</div>
+    </div>
+  </aside>
+
+  <!-- ═══════ MAIN ═══════ -->
+  <main class="flex-1 flex flex-col overflow-hidden main-c">
+    <header class="bg-white border-b border-s-200 px-5 py-4 flex items-center justify-between flex-shrink-0 z-20">
+      <div>
+        <div id="greet" class="text-xs text-s-400 font-medium mb-0.5"></div>
+        <div class="text-2xl font-bold text-s-900 tracking-tight" id="bal">0,00 €</div>
+      </div>
+      <button id="addBtn" class="px-5 py-2.5 bg-s-900 hover:bg-s-800 text-white font-semibold rounded-xl shadow-card transition flex items-center gap-2 text-sm">
+        <i class="fa-solid fa-plus text-xs"></i> Nuevo movimiento
+      </button>
+    </header>
+    <div id="app" class="flex-1 overflow-y-auto px-5 py-5 md:px-10"></div>
+  </main>
+</div>
+
+<!-- ═══════ BOTTOM NAV ═══════ -->
+<nav class="mob-nav fixed bottom-0 left-0 right-0 bg-white border-t border-s-200 z-30 flex items-center justify-around py-1">
+  <button data-v="dashboard" class="nav-m flex flex-col items-center gap-0.5 px-3 py-2 text-s-400"><i class="fa-solid fa-house"></i><span class="text-[10px] font-medium">Inicio</span></button>
+  <button data-v="transactions" class="nav-m flex flex-col items-center gap-0.5 px-3 py-2 text-s-400"><i class="fa-solid fa-list-check"></i><span class="text-[10px] font-medium">Mov.</span></button>
+  <button data-v="accounts" class="nav-m flex flex-col items-center gap-0.5 px-3 py-2 text-s-400"><i class="fa-solid fa-credit-card"></i><span class="text-[10px] font-medium">Cuentas</span></button>
+  <button data-v="budgets" class="nav-m flex flex-col items-center gap-0.5 px-3 py-2 text-s-400"><i class="fa-solid fa-piggy-bank"></i><span class="text-[10px] font-medium">Budget</span></button>
+  <button data-v="settings" class="nav-m flex flex-col items-center gap-0.5 px-3 py-2 text-s-400"><i class="fa-solid fa-gear"></i><span class="text-[10px] font-medium">Ajustes</span></button>
+</nav>
+
+<div id="mHost"></div>
+
+<script>
+/* ================================================================
+   CONFIGURACIÓN
+================================================================ */
+const SK='wp_v6';
+const CURS={
+  EUR:{s:'€',n:'Euro',r:.92,f:''},USD:{s:'$',n:'Dólar',r:1,f:'🇺'},
+  GBP:{s:'£',n:'Libra',r:.79,f:'🇬🇧'},MXN:{s:'$',n:'Peso MX',r:17.5,f:''},
+  BTC:{s:'',n:'Bitcoin',r:.000016,f:'₿'}
+};
+const CATS=[
+  {id:'food',n:'Comida',i:'fa-utensils',c:'#F97316'},{id:'transport',n:'Transporte',i:'fa-car',c:'#1464F0'},
+  {id:'housing',n:'Vivienda',i:'fa-house',c:'#059669'},{id:'leisure',n:'Ocio',i:'fa-gamepad',c:'#A855F7'},
+  {id:'health',n:'Salud',i:'fa-heart-pulse',c:'#EC4899'},{id:'shopping',n:'Compras',i:'fa-bag-shopping',c:'#DC2626'},
+  {id:'salary',n:'Salario',i:'fa-briefcase',c:'#059669'},{id:'investment',n:'Inversiones',i:'fa-chart-line',c:'#D97706'},
+  {id:'other',n:'Otros',i:'fa-ellipsis',c:'#64748B'}
+];
+const TYPES=[
+  {id:'bank',n:'Banco',i:'fa-building-columns'},{id:'cash',n:'Efectivo',i:'fa-wallet'},
+  {id:'credit',n:'Tarjeta',i:'fa-credit-card'},{id:'savings',n:'Ahorro',i:'fa-piggy-bank'}
+];
+
+/* ================================================================
+   ESTADO
+================================================================ */
+let S={accounts:[],txs:[],budgets:[],config:{bc:'EUR'},view:'dashboard'};
+let _type='expense', _cat='food', _aColor='#1E293B', _aIcon=null;
+
+/* ================================================================
+   HELPERS
+================================================================ */
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const gc=id=>CATS.find(c=>c.id===id)||CATS[8];
+const ga=id=>S.accounts.find(a=>a.id===id);
+const gt=id=>TYPES.find(t=>t.id===id)||TYPES[0];
+const tb=(a,f)=>{if(!f||!S.config.bc)return a;return(a/(CURS[f]?.r||1))*(CURS[S.config.bc]?.r||1)};
+const fm=(n,c)=>{const x=c||S.config.bc,s=CURS[x]?.s||'€';return(n<0?'-':'')+Math.abs(n).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' '+s};
+const fd=d=>new Date(d).toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'});
+const tbal=()=>S.accounts.reduce((s,a)=>s+tb(a.balance,a.currency),0);
+const ti=(iso)=>{const d=new Date(iso),p=n=>String(n).padStart(2,'0');return`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`};
+const spent=(cid)=>{const n=new Date();return S.txs.filter(t=>t.type==='expense'&&t.categoryId===cid&&new Date(t.date).getMonth()===n.getMonth()&&new Date(t.date).getFullYear()===n.getFullYear()).reduce((s,t)=>s+tb(t.amount,ga(t.aid)?.currency),0)};
+
+/* ================================================================
+   PERSISTENCIA
+================================================================ */
+function save(){try{localStorage.setItem(SK,JSON.stringify(S))}catch(e){}}
+function load(){
+  const r=localStorage.getItem(SK);
+  if(r){
+    try{
+      S=JSON.parse(r);
+      if(!S.config)S.config={bc:'EUR'};
+      if(!S.accounts)S.accounts=[];
+      if(!S.txs)S.txs=[];
+      if(!S.budgets)S.budgets=[];
+    }catch(e){ resetS() }
+  }else{ resetS() }
+}
+function resetS(){ S={accounts:[],txs:[],budgets:[],config:{bc:'EUR'},view:'dashboard'}; save(); }
+
+/* ================================================================
+   BIENVENIDA
+================================================================ */
+function getGreeting(){
+  const h=new Date().getHours();
+  if(h<12)return'Buenos días';
+  if(h<19)return'Buenas tardes';
+  return'Buenas noches';
+}
+function enterApp(){
+  const ws=document.getElementById('welcome-screen');
+  const ac=document.getElementById('app-container');
+  ws.classList.add('hidden');
+  setTimeout(()=>{
+    ac.style.opacity='1';
+    load();render();
+    document.querySelectorAll('.nav-i,.nav-m').forEach(b=>b.addEventListener('click',()=>sv(b.dataset.v)));
+    document.getElementById('addBtn').addEventListener('click',()=>openTx());
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')cm()});
+    sv('dashboard');
+  },400);
+}
+
+/* ================================================================
+   BALANCES
+================================================================ */
+function recalc(){
+  S.accounts.forEach(a=>{
+    let b=a.ib||0;
+    S.txs.forEach(t=>{
+      if(t.type==='income'&&t.aid===a.id)b+=t.amount;
+      if(t.type==='expense'&&t.aid===a.id)b-=t.amount;
+      if(t.type==='transfer'&&t.fid===a.id)b-=t.amount;
+      if(t.type==='transfer'&&t.tid===a.id)b+=t.amount;
+    });
+    a.balance=b;
+  });
+}
+
+/* ================================================================
+   NAVEGACIÓN
+================================================================ */
+function sv(v){
+  S.view=v;
+  render();
+  document.querySelectorAll('.nav-i').forEach(b=>b.classList.toggle('nav-on',b.dataset.v===v));
+  document.querySelectorAll('.nav-m').forEach(b=>{
+    b.classList.toggle('mob-on',b.dataset.v===v);
+    b.classList.toggle('text-s-400',b.dataset.v!==v);
+  });
+}
+
+/* ================================================================
+   RENDER PRINCIPAL
+================================================================ */
+function render(){
+  recalc();
+  document.getElementById('bal').textContent=fm(tbal());
+  document.getElementById('greet').textContent=getGreeting();
+  const el=document.getElementById('app');
+  el.classList.remove('view-a'); void el.offsetWidth; el.classList.add('view-a');
+  
+  switch(S.view){
+    case 'dashboard': vDash(el); break;
+    case 'transactions': vTx(el); break;
+    case 'accounts': vAcc(el); break;
+    case 'budgets': vBud(el); break;
+    case 'analytics': vAna(el); break;
+    case 'settings': vSet(el); break;
+  }
+}
+
+/* ================================================================
+   VISTAS
+================================================================ */
+function vDash(el){
+  const n=new Date(),m=n.getMonth(),y=n.getFullYear();
+  const mt=S.txs.filter(t=>{const d=new Date(t.date);return d.getMonth()===m&&d.getFullYear()===y});
+  const inc=mt.filter(t=>t.type==='income').reduce((s,t)=>s+tb(t.amount,ga(t.aid)?.currency),0);
+  const exp=mt.filter(t=>t.type==='expense').reduce((s,t)=>s+tb(t.amount,ga(t.aid)?.currency),0);
+  const sav=inc-exp;
+  const rec=[...S.txs].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,6);
+
+  let html = '';
+  // CAMBIO AQUÍ: Icono grande y visible para la bienvenida
+  if(S.accounts.length===0){
+    html+=`<div class="text-center py-14 mb-6">
+      <div class="w-20 h-20 rounded-3xl bg-s-100 mx-auto flex items-center justify-center mb-5">
+        <i class="fa-solid fa-piggy-bank text-4xl text-s-400"></i>
+      </div>
+      <h3 class="text-xl font-bold text-s-800 mb-2">Bienvenido a WalletPro</h3>
+      <p class="text-sm text-s-400 mb-6">Empieza creando tu primera cuenta para gestionar tus finanzas</p>
+      <button onclick="openAcc()" class="px-6 py-3 bg-s-900 hover:bg-s-800 text-white font-semibold rounded-xl shadow-card transition text-sm inline-flex items-center gap-2">
+        <i class="fa-solid fa-plus"></i> Crear cuenta
+      </button>
+    </div>`;
+  }
+
+  html+=`<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-7">${kpi('Ingresos',fm(inc),'fa-arrow-trend-up','ok')}${kpi('Gastos',fm(exp),'fa-arrow-trend-down','bad')}${kpi(sav>=0?'Ahorro':'Déficit',fm(sav),sav>=0?'fa-piggy-bank':'fa-triangle-exclamation',sav>=0?'ok':'bad')}</div>`;
+  if(S.accounts.length>0) html+=`<div class="mb-7"><div class="flex items-center justify-between mb-3"><h2 class="text-sm font-semibold text-s-800">Cuentas</h2><button onclick="openAcc()" class="text-xs text-p-600 hover:text-p-700 font-semibold">+ Nueva</button></div><div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">${S.accounts.map(ac).join('')}</div></div>`;
+  html+=`<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-7"><div class="bg-white rounded-xl p-5 shadow-card"><h3 class="text-sm font-semibold text-s-800 mb-4">Gastos</h3><div class="h-56"><canvas id="cD"></canvas></div></div><div class="bg-white rounded-xl p-5 shadow-card"><h3 class="text-sm font-semibold text-s-800 mb-4">Flujo</h3><div class="h-56"><canvas id="cC"></canvas></div></div></div>`;
+  if(S.budgets.length>0) html+=`<div class="mb-7"><h2 class="text-sm font-semibold text-s-800 mb-3">Presupuestos</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-3">${S.budgets.slice(0,4).map(bb).join('')}</div></div>`;
+  if(rec.length>0) html+=`<div class="bg-white rounded-xl p-5 shadow-card"><div class="flex items-center justify-between mb-3"><h3 class="text-sm font-semibold text-s-800">Últimos movimientos</h3><button onclick="sv('transactions')" class="text-xs text-p-600 hover:underline font-semibold">Ver todos</button></div><div class="divide-y divide-s-100">${rec.map(tr).join('')}</div></div>`;
+  
+  el.innerHTML=html;
+  if(S.accounts.length>0){drawD('cD',mt.filter(t=>t.type==='expense'));drawC('cC',7)}
+}
+
+function kpi(l,v,i,c){return`<div class="bg-white rounded-xl p-5 shadow-card"><div class="flex items-center justify-between"><div><div class="text-xs text-s-400 font-medium mb-1">${l}</div><div class="text-xl font-bold text-s-900 tracking-tight">${v}</div></div><div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:${c==='ok'?'#ECFDF5':'#FEF2F2'}"><i class="fa-solid ${i}" style="color:${c==='ok'?'#059669':'#DC2626'}"></i></div></div></div>`}
+function ac(a){const t=gt(a.type);const ic=a.ci?`<img src="${a.ci}" class="w-5 h-5 rounded object-cover"/>`:`<i class="fa-solid ${a.icon||t.i}"></i>`;let gl='';if(a.goal){const p=Math.min((a.balance/a.goal)*100,100);gl=`<div class="mt-3"><div class="flex justify-between text-[10px] text-white/70 mb-1"><span>Meta</span><span>${p.toFixed(0)}%</span></div><div class="h-1 bg-white/20 rounded-full overflow-hidden"><div class="prog h-full bg-white rounded-full" style="width:${p}%"></div></div></div>`}return`<div class="bg-s-800 rounded-xl p-5 text-white cursor-pointer hover:shadow-lift transition" onclick="openAcc('${a.id}')"><div class="flex items-center justify-between mb-4"><div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:${a.color||'#1E293B'}">${ic}</div></div><div class="text-xs text-white/60 mb-1">${a.name}</div><div class="text-xl font-bold tracking-tight">${fm(a.balance,a.cur)}</div><div class="text-[10px] text-white/50 mt-0.5">${t.n} · ${a.cur}</div>${gl}</div>`}
+function tr(t){const c=gc(t.categoryId);const ii=t.type==='income',it=t.type==='transfer';let lb,ic,co;if(it){const f=ga(t.fid),to=ga(t.tid);lb=t.note||`${f?.name||'?'} → ${to?.name||'?'}`;ic='fa-right-left';co='#64748B'}else{lb=t.note||c.n;ic=c.i;co=c.c}const a=ga(t.aid||t.fid);const cu=a?.cur||S.config.bc;const cl=ii?'text-ok':it?'text-s-400':'text-bad';const sg=ii?'+':it?'':'−';return`<div class="flex items-center gap-3 py-3 px-1 hover:bg-s-50 rounded-lg transition group"><div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:${co}15;color:${co}"><i class="fa-solid ${ic} text-sm"></i></div><div class="flex-1 min-w-0"><div class="text-sm font-medium text-s-800 truncate">${lb}</div><div class="text-[11px] text-s-400">${c.n} · ${fd(t.date)}</div></div><div class="text-right"><div class="text-sm font-semibold ${cl}">${sg} ${fm(t.amount,cu)}</div><button onclick="event.stopPropagation();delTx('${t.id}')" class="text-[10px] text-s-300 hover:text-bad opacity-0 group-hover:opacity-100 transition" title="Eliminar"><i class="fa-regular fa-trash-can"></i></button></div></div>`}
+function bb(b){const c=gc(b.cid);const sp=spent(b.cid);const pct=b.limit>0?Math.min((sp/b.limit)*100,100):0;const ov=sp>b.limit;const bc=ov?'bg-bad':pct>=75?'bg-warn':'bg-ok';return`<div class="bg-white rounded-xl p-4 shadow-card"><div class="flex items-center justify-between mb-2"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:${c.c}15;color:${c.c}"><i class="fa-solid ${c.i} text-xs"></i></div><div><div class="text-sm font-semibold text-s-800">${c.n}</div><div class="text-[10px] text-s-400">Límite ${fm(b.limit)}</div></div></div><button onclick="delBud('${b.id}')" class="text-s-300 hover:text-bad transition"><i class="fa-regular fa-trash-can text-xs"></i></button></div><div class="h-2 bg-s-100 rounded-full overflow-hidden"><div class="prog h-full ${bc} rounded-full" style="width:${pct}%"></div></div><div class="flex justify-between mt-1.5 text-[11px]"><span class="${ov?'text-bad font-semibold':'text-s-400'}">${fm(sp)} gastado</span><span class="text-s-400">${ov?'Excedido':'Disp: '+fm(b.limit-sp)}</span></div></div>`}
+
+/* ================================================================
+   TRANSACCIONES
+================================================================ */
+function vTx(el){el.innerHTML=`<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5"><h1 class="text-xl font-bold text-s-900">Movimientos</h1><button onclick="openTx()" class="px-4 py-2 bg-s-900 hover:bg-s-800 text-white font-semibold rounded-xl shadow-card transition text-sm"><i class="fa-solid fa-plus mr-1.5"></i>Nuevo</button></div><div class="bg-white rounded-xl p-4 shadow-card mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3"><div class="relative sm:col-span-1"><i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-s-300 text-xs"></i><input id="qT" type="text" placeholder="Buscar..." class="w-full pl-9 pr-3 py-2 bg-s-50 border border-s-200 rounded-lg text-sm placeholder:text-s-300"/></div><select id="fC" class="px-3 py-2 bg-s-50 border border-s-200 rounded-lg text-sm text-s-600"><option value="">Categoría</option>${CATS.map(c=>`<option value="${c.id}">${c.n}</option>`).join('')}</select><select id="fA" class="px-3 py-2 bg-s-50 border border-s-200 rounded-lg text-sm text-s-600"><option value="">Cuenta</option>${S.accounts.map(a=>`<option value="${a.id}">${a.name}</option>`).join('')}</select></div><div class="bg-white rounded-xl shadow-card divide-y divide-s-100 max-h-[65vh] overflow-y-auto"><div id="txL"></div></div>`;['qT','fC','fA'].forEach(id=>{const e=document.getElementById(id);if(e)e.addEventListener('input',rlT)});rlT()}
+function rlT(){const q=(document.getElementById('qT')?.value||'').toLowerCase();const fC=document.getElementById('fC')?.value||'';const fA=document.getElementById('fA')?.value||'';const fl=S.txs.filter(t=>{if(q&&!(t.note||'').toLowerCase().includes(q))return false;if(fC&&t.categoryId!==fC)return false;if(fA&&t.aid!==fA&&t.fid!==fA&&t.tid!==fA)return false;return true}).sort((a,b)=>new Date(b.date)-new Date(a.date));const h=document.getElementById('txL');if(!h)return;h.innerHTML=fl.length===0?`<div class="text-center py-12 text-s-300 text-sm"><i class="fa-regular fa-folder-open text-2xl mb-2 block"></i>Sin movimientos</div>`:fl.map(tr).join('')}
+
+/* ================================================================
+   CUENTAS
+================================================================ */
+function vAcc(el){el.innerHTML=`<div class="flex items-center justify-between mb-5"><h1 class="text-xl font-bold text-s-900">Cuentas</h1><button onclick="openAcc()" class="px-4 py-2 bg-s-900 hover:bg-s-800 text-white font-semibold rounded-xl shadow-card transition text-sm"><i class="fa-solid fa-plus mr-1.5"></i>Nueva cuenta</button></div>${S.accounts.length===0?`<div class="bg-white rounded-xl p-12 text-center shadow-card"><div class="w-14 h-14 rounded-2xl bg-s-100 mx-auto flex items-center justify-center mb-3"><i class="fa-regular fa-credit-card text-2xl text-s-300"></i></div><div class="text-s-500 mb-3">No tienes cuentas</div><button onclick="openAcc()" class="px-4 py-2 bg-s-900 text-white font-semibold rounded-xl text-sm">Crear</button></div>`:`<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">${S.accounts.map(ac).join('')}</div>`}`}
+
+/* ================================================================
+   PRESUPUESTOS & ANALÍTICAS & AJUSTES
+================================================================ */
+function vBud(el){el.innerHTML=`<div class="flex items-center justify-between mb-5"><h1 class="text-xl font-bold text-s-900">Presupuestos</h1><button onclick="openBud()" class="px-4 py-2 bg-s-900 hover:bg-s-800 text-white font-semibold rounded-xl shadow-card transition text-sm"><i class="fa-solid fa-plus mr-1.5"></i>Nuevo</button></div>${S.budgets.length===0?`<div class="bg-white rounded-xl p-12 text-center shadow-card"><i class="fa-regular fa-circle-dot text-2xl text-s-300 mb-3 block"></i><div class="text-s-500">Sin presupuestos</div></div>`:`<div class="grid grid-cols-1 md:grid-cols-2 gap-3">${S.budgets.map(bb).join('')}</div>`}`}
+function vAna(el){el.innerHTML=`<h1 class="text-xl font-bold text-s-900 mb-5">Analíticas</h1><div class="grid grid-cols-1 lg:grid-cols-2 gap-4"><div class="bg-white rounded-xl p-5 shadow-card"><h3 class="text-sm font-semibold text-s-800 mb-4">Gastos</h3><div class="h-72"><canvas id="aD"></canvas></div></div><div class="bg-white rounded-xl p-5 shadow-card"><h3 class="text-sm font-semibold text-s-800 mb-4">Flujo (30 días)</h3><div class="h-72"><canvas id="aC"></canvas></div></div><div class="bg-white rounded-xl p-5 shadow-card lg:col-span-2"><h3 class="text-sm font-semibold text-s-800 mb-4">Top categorías</h3><div id="tC" class="space-y-3"></div></div></div>`;drawD('aD',S.txs.filter(t=>t.type==='expense'));drawC('aC',30);tc()}
+function tc(){const n=new Date(),sp={};S.txs.filter(t=>t.type==='expense'&&new Date(t.date).getMonth()===n.getMonth()&&new Date(t.date).getFullYear()===n.getFullYear()).forEach(t=>{sp[t.categoryId]=(sp[t.categoryId]||0)+tb(t.amount,ga(t.aid)?.currency)});const s=Object.entries(sp).sort((a,b)=>b[1]-a[1]),tot=s.reduce((a,[,v])=>a+v,0)||1;const h=document.getElementById('tC');if(!h)return;h.innerHTML=s.length===0?'<div class="text-s-300 text-center py-6 text-sm">Sin datos</div>':s.map(([id,v])=>{const c=gc(id),p=(v/tot)*100;return`<div class="flex items-center gap-3"><div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:${c.c}15;color:${c.c}"><i class="fa-solid ${c.i} text-sm"></i></div><div class="flex-1"><div class="flex justify-between mb-1"><span class="text-sm font-medium text-s-800">${c.n}</span><span class="text-sm font-semibold">${fm(v)}</span></div><div class="h-1.5 bg-s-100 rounded-full overflow-hidden"><div class="prog h-full rounded-full" style="width:${p}%;background:${c.c}"></div></div></div></div>`}).join('')}
+function vSet(el){const sz=(new Blob([JSON.stringify(S)]).size/1024).toFixed(1);el.innerHTML=`<h1 class="text-xl font-bold text-s-900 mb-5">Ajustes</h1><div class="bg-white rounded-xl p-6 shadow-card mb-5"><div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">${[['Cuentas',S.accounts.length],['Movimientos',S.txs.length],['Presupuestos',S.budgets.length],['Tamaño',sz+' KB']].map(([l,v])=>`<div class="bg-s-50 rounded-lg p-3"><div class="text-xs text-s-400 font-medium mb-1">${l}</div><div class="font-bold text-s-900">${v}</div></div>`).join('')}</div><div class="bg-s-50 rounded-lg p-3 text-xs text-s-600"><i class="fa-solid fa-circle-check text-ok mr-1.5"></i>Datos locales seguros</div></div><div class="bg-white rounded-xl p-6 shadow-card mb-5"><h3 class="font-semibold text-s-900 mb-3">Preferencias</h3><div class="flex items-center justify-between p-3 rounded-lg hover:bg-s-50"><div><div class="text-sm font-medium text-s-800">Moneda base</div></div><select id="pC" class="px-3 py-2 bg-s-50 border border-s-200 rounded-lg text-sm font-semibold">${Object.entries(CURS).map(([k,v])=>`<option value="${k}" ${k===S.config.bc?'selected':''}>${v.f} ${k}</option>`).join('')}</select></div></div><div class="bg-white rounded-xl p-6 shadow-card border border-bad/10"><button onclick="reset()" class="w-full py-2.5 rounded-xl bg-bad/10 hover:bg-bad hover:text-white text-bad font-semibold transition text-sm"><i class="fa-regular fa-trash-can mr-2"></i>Borrar datos</button></div>`;document.getElementById('pC')?.addEventListener('change',e=>{S.config.bc=e.target.value;save();render()})}
+
+/* ================================================================
+   GRÁFICOS
+================================================================ */
+function drawD(id,txs){const cv=document.getElementById(id);if(!cv)return;const sp={};txs.forEach(t=>{sp[t.categoryId]=(sp[t.categoryId]||0)+tb(t.amount,ga(t.aid)?.currency)});const en=Object.entries(sp),lb=en.map(([i])=>gc(i).n),dt=en.map(([,v])=>v),cl=en.map(([i])=>gc(i).c);const ex=Chart.getChart(cv);if(ex)ex.destroy();if(!dt.length){const ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);ctx.fillStyle='#CBD5E1';ctx.font='13px Inter';ctx.textAlign='center';ctx.fillText('Sin datos',cv.width/2,cv.height/2);return}new Chart(cv,{type:'doughnut',data:{labels:lb,datasets:[{data:dt,backgroundColor:cl,borderWidth:0,hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{position:'bottom',labels:{color:'#475569',padding:12,usePointStyle:true,pointStyle:'circle',font:{size:11,weight:'500'}}}}}})}
+function drawC(id,days){const cv=document.getElementById(id);if(!cv)return;const now=new Date(),lb=[],ic=[],ec=[];for(let i=days-1;i>=0;i--){const d=new Date(now.getTime()-i*864e5);const ds=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime(),de=ds+864e5;lb.push(d.toLocaleDateString('es-ES',{day:'2-digit',month:'short'}));let ii=0,ee=0;S.txs.forEach(t=>{const ts=new Date(t.date).getTime();if(ts>=ds&&ts<de){const v=tb(t.amount,ga(t.aid)?.currency);if(t.type==='income')ii+=v;if(t.type==='expense')ee+=v}});ic.push(ii);ec.push(ee)}const ex=Chart.getChart(cv);if(ex)ex.destroy();new Chart(cv,{type:'bar',data:{labels:lb,datasets:[{label:'Ingresos',data:ic,backgroundColor:'#34A853',borderRadius:6,barPercentage:.55},{label:'Gastos',data:ec,backgroundColor:'#EA4335',borderRadius:6,barPercentage:.55}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#475569',usePointStyle:true,pointStyle:'circle',font:{weight:'500'}}}}}})}
+
+/* ================================================================
+   MODAL: TRANSACCIÓN
+================================================================ */
+function openTx(eid){
+  const t=eid?S.txs.find(x=>x.id===eid):null;
+  _type=t?.type||'expense';
+  _cat=t?.categoryId||'food';
+  const isEdit = !!t;
+
+  const h=document.getElementById('mHost');
+  h.innerHTML=`
+  <div class="fixed inset-0 bg-s-900/30 z-50 flex items-center justify-center p-4" onclick="if(event.target===this)cm()">
+    <div class="bg-white rounded-2xl w-full max-w-lg shadow-modal mod-a max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-s-200">
+        <h2 class="text-lg font-bold text-s-900">${isEdit?'Editar':'Nuevo'} movimiento</h2>
+        <button onclick="cm()" class="w-8 h-8 rounded-lg bg-s-100 hover:bg-s-200 text-s-400 flex items-center justify-center transition"><i class="fa-solid fa-xmark text-sm"></i></button>
+      </div>
+      <div class="px-6 py-5">
+        
+        <!-- TIPO -->
+        <div class="mb-5">
+          <label class="text-xs font-semibold text-s-500 uppercase tracking-wide mb-3 block">Tipo</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button" id="btn-exp" data-type="expense" onclick="setType('expense')" class="typ-btn flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 border-s-200 bg-white hover:bg-s-50 transition">
+              <div class="typ-icon w-8 h-8 rounded-lg bg-s-100 flex items-center justify-center"><i class="fa-solid fa-arrow-down text-s-600 text-sm icon-symbol"></i></div>
+              <span class="typ-label text-xs font-semibold text-s-600">Gasto</span>
+            </button>
+            <button type="button" id="btn-inc" data-type="income" onclick="setType('income')" class="typ-btn flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 border-s-200 bg-white hover:bg-s-50 transition">
+              <div class="typ-icon w-8 h-8 rounded-lg bg-s-100 flex items-center justify-center"><i class="fa-solid fa-arrow-up text-s-600 text-sm icon-symbol"></i></div>
+              <span class="typ-label text-xs font-semibold text-s-600">Ingreso</span>
+            </button>
+            <button type="button" id="btn-tr" data-type="transfer" onclick="setType('transfer')" class="typ-btn flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 border-s-200 bg-white hover:bg-s-50 transition">
+              <div class="typ-icon w-8 h-8 rounded-lg bg-s-100 flex items-center justify-center"><i class="fa-solid fa-right-left text-s-600 text-sm icon-symbol"></i></div>
+              <span class="typ-label text-xs font-semibold text-s-600">Transferencia</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- CAMPOS: INGRESO / GASTO -->
+        <div id="sec-ie">
+          <div class="mb-4">
+            <label class="text-xs font-semibold text-s-500 uppercase tracking-wide mb-3 block">Categoría</label>
+            <div class="grid grid-cols-5 gap-1.5">
+              ${CATS.map(c=>`<button type="button" onclick="setCat('${c.id}')" data-c="${c.id}" class="cat-btn flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-s-200 bg-white hover:bg-s-50 transition"><div class="w-7 h-7 rounded-lg flex items-center justify-center cat-icon-div" style="background:${c.c}18;color:${c.c}"><i class="fa-solid ${c.i} text-xs cat-icon"></i></div><span class="text-[10px] font-medium text-s-600 truncate max-w-full">${c.n}</span></button>`).join('')}
+            </div>
+          </div>
+          <div class="mb-4">
+            <label class="text-xs font-semibold text-s-500 uppercase tracking-wide mb-2 block">Cuenta</label>
+            ${S.accounts.length===0?`<div class="text-xs text-s-400 bg-s-50 rounded-lg p-3">Crea una cuenta en <button onclick="cm();sv('accounts')" class="text-p-600 font-semibold">Cuentas</button></div>`:`<select id="txA" class="w-full px-3 py-2.5 bg-s-50 border border-s-200 rounded-lg text-sm font-medium">${S.accounts.map(a=>`<option value="${a.id}" ${t?.aid===a.id?'selected':''}>${a.name} (${a.cur})</option>`).join('')}</select>`}
+          </div>
+        </div>
+
+        <!-- CAMPOS: TRANSFERENCIA -->
+        <div id="sec-tr" class="hidden">
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div><label class="text-xs font-semibold text-s-500 uppercase tracking-wide mb-2 block">Origen</label><select id="txF" class="w-full px-3 py-2.5 bg-s-50 border border-s-200 rounded-lg text-sm font-medium">${S.accounts.map(a=>`<option value="${a.id}" ${t?.fid===a.id?'selected':''}>${a.name}</option>`).join('')}</select></div>
+            <div><label class="text-xs font-semibold text-s-500 uppercase tracking-wide mb-2 block">Destino</label><select id="txT" class="w-full px-3 py-2.5 bg-s-50 border border-s-200 rounded-lg text-sm font-medium">${S.accounts.map(a=>`<option value="${a.id}" ${t?.tid===a.id?'selected':''}>${a.name}</option>`).join('')}</select></div>
+          </div>
+          <div id="err-tr" class="text-xs text-bad mb-3 hidden"><i class="fa-solid fa-circle-exclamation mr-1"></i>Las cuentas deben ser diferentes</div>
+        </div>
+
+        <!-- COMÚN -->
+        <div class="mb-4">
+          <label class="text-xs font-semibold text-s-500 uppercase tracking-wide mb-2 block">Importe</label>
+          <div class="relative"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-s-300 font-medium text-sm">${CURS[S.config.bc]?.s||'€'}</span><input id="txM" type="number" step="0.01" min="0.01" value="${t?.amount||''}" placeholder="0.00" class="w-full pl-8 pr-3 py-2.5 bg-s-50 border border-s-200 rounded-lg text-lg font-bold text-s-900"/></div>
+          <div id="err-am" class="text-xs text-bad mt-1 hidden">Importe inválido</div>
+        </div>
+
+        <div class="mb-4">
+          <label class="text-xs font-semibold text-s-500 uppercase tracking-wide mb-2 block">Fecha</label>
+          <input id="txD" type="datetime-local" value="${t?ti(t.date):ti(new Date().toISOString())}" class="w-full px-3 py-2.5 bg-s-50 border border-s-200 rounded-lg text-sm font-medium"/>
+        </div>
+
+        <div class="mb-5">
+          <label class="text-xs font-semibold text-s-500 uppercase tracking-wide mb-2 block">Concepto</label>
+          <input id="txN" type="text" value="${t?.note||''}" placeholder="Ej: Supermercado" class="w-full px-3 py-2.5 bg-s-50 border border-s-200 rounded-lg text-sm font-medium"/>
+        </div>
+
+        <div class="flex gap-3">
+          <button onclick="cm()" class="flex-1 py-2.5 rounded-xl bg-s-100 hover:bg-s-200 text-s-600 font-semibold transition text-sm">Cancelar</button>
+          <button onclick="savTx('${eid||''}')" class="flex-1 py-2.5 rounded-xl bg-s-900 hover:bg-s-800 text-white font-semibold shadow-card transition text-sm">Guardar</button>
+        </div>
+
+      </div>
+    </div>
+  </div>`;
+
+  setType(_type);
+  highlightCat();
+}
+
+function setType(v){
+  _type=v;
+  const cfg = {
+    'expense':   { btnBg:'bg-red-500', btnBor:'border-red-500', iconBg:'bg-red-500', iconTxt:'text-white', lblTxt:'text-white' },
+    'income':    { btnBg:'bg-green-500', btnBor:'border-green-500', iconBg:'bg-green-500', iconTxt:'text-white', lblTxt:'text-white' },
+    'transfer':  { btnBg:'bg-blue-500', btnBor:'border-blue-500', iconBg:'bg-blue-500', iconTxt:'text-white', lblTxt:'text-white' }
+  };
+  const active = cfg[v];
+  const buttons = document.querySelectorAll('.typ-btn');
+
+  buttons.forEach(btn => {
+    const type = btn.getAttribute('data-type');
+    const isType = type === v;
+    const label = btn.querySelector('.typ-label');
+    const iconCont = btn.querySelector('.typ-icon');
+    const icon = btn.querySelector('.icon-symbol');
+
+    btn.classList.remove('bg-red-500','border-red-500','bg-green-500','border-green-500','bg-blue-500','border-blue-500');
+    btn.classList.add('bg-white','border-s-200');
+    label.classList.remove('text-white'); label.classList.add('text-s-600');
+    iconCont.classList.remove('bg-red-500','bg-green-500','bg-blue-500'); iconCont.classList.add('bg-s-100');
+    icon.classList.remove('text-white'); icon.classList.add('text-s-600');
+
+    if (isType) {
+      btn.classList.remove('bg-white','border-s-200');
+      btn.classList.add(active.btnBg, active.btnBor);
+      label.classList.remove('text-s-600'); label.classList.add(active.lblTxt);
+      iconCont.classList.remove('bg-s-100'); iconCont.classList.add(active.iconBg);
+      icon.classList.remove('text-s-600'); icon.classList.add(active.iconTxt);
+    }
+  });
+
+  const isTr=_type==='transfer';
+  const ie=document.getElementById('sec-ie');
+  const tr=document.getElementById('sec-tr');
+  if(ie) ie.classList.toggle('hidden', isTr);
+  if(tr) tr.classList.toggle('hidden', !isTr);
+}
+
+function setCat(id){_cat=id;highlightCat()}
+function highlightCat(){
+    document.querySelectorAll('.cat-btn').forEach(btn => {
+        const id = btn.getAttribute('data-c');
+        const isActive = id === _cat;
+        const catInfo = CATS.find(c => c.id === id);
+        const iconDiv = btn.querySelector('.cat-icon-div');
+        const icon = btn.querySelector('.cat-icon');
+        if (isActive) { iconDiv.style.background = catInfo.c; icon.style.color = '#FFFFFF'; }
+        else { iconDiv.style.background = `${catInfo.c}18`; icon.style.color = catInfo.c; }
+    });
+}
+
+function savTx(eid){
+  document.querySelectorAll('[id^="err-"]').forEach(e=>e.classList.add('hidden'));
+  const amt=parseFloat(document.getElementById('txM')?.value);
+  const date=document.getElementById('txD')?.value;
+  const note=document.getElementById('txN')?.value.trim()||'';
+  if(!amt||amt<=0){const e=document.getElementById('err-am');if(e)e.classList.remove('hidden');return}
+  if(!date)return;
+  let tx;
+  if(_type==='transfer'){
+    const fid=document.getElementById('txF')?.value;
+    const tid=document.getElementById('txT')?.value;
+    if(!fid||!tid){alert('Selecciona cuentas');return}
+    if(fid===tid){const e=document.getElementById('err-tr');if(e)e.classList.remove('hidden');return}
+    tx={id:eid||uid(),type:'transfer',amount:amt,fid,tid,categoryId:'other',date:new Date(date).toISOString(),note};
+  } else {
+    const aid=document.getElementById('txA')?.value;
+    if(!aid){alert('Crea una cuenta primero');cm();return}
+    tx={id:eid||uid(),type:_type,amount:amt,aid,categoryId:_cat,date:new Date(date).toISOString(),note};
+  }
+  if(eid){const i=S.txs.findIndex(t=>t.id===eid);if(i>=0)S.txs[i]=tx}else S.txs.push(tx);
+  save(); cm(); render();
+}
+function delTx(id){if(!confirm('¿Eliminar?'))return;S.txs=S.txs.filter(t=>t.id!==id);save();render()}
+
+/* ================================================================
+   MODAL: CUENTA - CON SELECTOR DE COLOR MEJORADO
+================================================================ */
+function openAcc(eid){
+  const a=eid?ga(eid):null;
+  _aColor=a?.color||'#1E293B'; _aIcon=a?.ci||null;
+  const ie=!!a;
+  
+  document.getElementById('mHost').innerHTML=`
+  <div class="fixed inset-0 bg-s-900/30 z-50 flex items-center justify-center p-4" onclick="if(event.target===this)cm()">
+    <div class="bg-white rounded-2xl w-full max-w-md shadow-modal mod-a max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-s-200">
+        <h2 class="text-lg font-bold text-s-900">${ie?'Editar':'Nueva'} cuenta</h2>
+        <button onclick="cm()" class="w-8 h-8 rounded-lg bg-s-100 hover:bg-s-200 text-s-400 flex items-center justify-center transition"><i class="fa-solid fa-xmark text-sm"></i></button>
+      </div>
+      <div class="px-6 py-5 space-y-4">
+        <div><label class="text-xs font-semibold text-s-500 uppercase tracking-wide mb-2 block">Nombre</label><input id="an" type="text" value="${a?.name||''}" class="w-full px-3 py-2.5 bg-s-50 border border-s-200 rounded-lg text-sm font-medium"/></div>
+        <div class="grid grid-cols-2 gap-3"><div><label class="text-xs font-semibold text-s-500 uppercase tracking-wide mb-2 block">Tipo</label><select id="at" class="w-full px-3 py-2.5 bg-s-50 border border-s-200 rounded-lg text-sm font-medium">${TYPES.map(t=>`<option value="${t.id}" ${a?.type===t.id?'selected':''}>${t.n}</option>`).join('')}</select></div><div><label class="text-xs font-semibold text-s-500 uppercase tracking-wide mb-2 block">Moneda</label><select id="ac" class="w-full px-3 py-2.5 bg-s-50 border border-s-200 rounded-lg text-sm font-medium">${Object.entries(CURS).map(([k,v])=>`<option value="${k}" ${a?.cur===k?'selected':''}>${v.f} ${k}</option>`).join('')}</select></div></div>
+        <div><label class="text-xs font-semibold text-s-500 uppercase tracking-wide mb-2 block">Saldo</label><input id="ab" type="number" step="0.01" value="${a?.ib??0}" class="w-full px-3 py-2.5 bg-s-50 border border-s-200 rounded-lg text-sm font-medium"/></div>
+        
+        <!-- SELECTOR DE COLOR MEJORADO -->
+        <div>
+          <label class="text-xs font-semibold text-s-500 uppercase tracking-wide mb-2 block">Color</label>
+          <div class="flex items-center gap-3">
+            <div id="colorPreview" class="color-preview" style="background:${_aColor}"></div>
+            <div class="flex gap-2 flex-wrap flex-1" id="cp">
+              ${['#1E293B','#1464F0','#059669','#DC2626','#D97706','#A855F7','#0D9488','#F59E0B'].map(c=>`<button type="button" onclick="pickCol('${c}')" data-c="${c}" class="w-8 h-8 rounded-lg border-2 transition hover:scale-105" style="background:${c};border-color:${_aColor===c?'#1E293B':'transparent'}"></button>`).join('')}
+            </div>
+            <input type="color" id="customColor" value="${_aColor}" class="cursor-pointer" title="Color personalizado" onchange="pickCol(this.value)">
+          </div>
+          <p class="text-[10px] text-s-400 mt-1">Elige un color predefinido o usa el selector para personalizar</p>
+        </div>
+        
+        <label class="flex items-center gap-3 p-3 bg-s-50 rounded-lg cursor-pointer"><input type="checkbox" id="as" ${a?.sh?'checked':''} class="w-4 h-4 accent-p-600 rounded"/><div><div class="text-sm font-semibold text-s-800">Cuenta compartida</div></div></label>
+        ${ie?`<button onclick="delAcc('${a.id}')" class="w-full py-2 rounded-xl bg-bad/10 hover:bg-bad hover:text-white text-bad font-semibold transition text-sm">Eliminar</button>`:''}
+        <div class="flex gap-3 pt-1"><button onclick="cm()" class="flex-1 py-2.5 rounded-xl bg-s-100 hover:bg-s-200 text-s-600 font-semibold transition text-sm">Cancelar</button><button onclick="savAcc('${eid||''}')" class="flex-1 py-2.5 rounded-xl bg-s-900 hover:bg-s-800 text-white font-semibold shadow-card transition text-sm">Guardar</button></div>
+      </div>
+    </div>
+  </div>`;
+  
+  updateColorPreview(_aColor);
+  document.getElementById('as')?.addEventListener('change',e=>{});
+}
+
+function updateColorPreview(color){
+  const preview=document.getElementById('colorPreview');
+  if(preview) preview.style.background=color;
+  document.querySelectorAll('#cp button').forEach(b=>{
+    b.style.borderColor = b.dataset.c===color ? '#1E293B' : 'transparent';
+  });
+  const customInput=document.getElementById('customColor');
+  if(customInput) customInput.value=color;
+}
+
+function pickCol(c){
+  _aColor=c;
+  updateColorPreview(c);
+}
+
+function savAcc(eid){
+  const n=document.getElementById('an').value.trim(); if(!n){alert('Nombre obligatorio');return}
+  const type=document.getElementById('at').value;
+  const cur=document.getElementById('ac').value;
+  const ib=parseFloat(document.getElementById('ab').value)||0;
+  const sh=document.getElementById('as').checked;
+  const t=gt(type);
+  if(eid){const a=ga(eid);if(a)Object.assign(a,{name:n,type,cur,ib,color:_aColor,icon:t.i,sh,ci:_aIcon})}
+  else S.accounts.push({id:uid(),name:n,type,cur,ib,balance:ib,color:_aColor,icon:t.i,sh,ci:_aIcon});
+  save(); cm(); render();
+}
+function delAcc(id){if(!confirm('¿Eliminar cuenta?'))return;S.accounts=S.accounts.filter(a=>a.id!==id);S.txs=S.txs.filter(t=>t.aid!==id);save();cm();render()}
+
+/* ================================================================
+   MODAL: PRESUPUESTO
+================================================================ */
+function openBud(){
+  document.getElementById('mHost').innerHTML=`
+  <div class="fixed inset-0 bg-s-900/30 z-50 flex items-center justify-center p-4" onclick="if(event.target===this)cm()">
+    <div class="bg-white rounded-2xl w-full max-w-sm shadow-modal mod-a">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-s-200">
+        <h2 class="text-lg font-bold text-s-900">Presupuesto</h2>
+        <button onclick="cm()" class="w-8 h-8 rounded-lg bg-s-100 hover:bg-s-200 text-s-400 flex items-center justify-center transition"><i class="fa-solid fa-xmark text-sm"></i></button>
+      </div>
+      <div class="px-6 py-5 space-y-4">
+        <select id="bC" class="w-full px-3 py-2.5 bg-s-50 border border-s-200 rounded-lg text-sm font-medium">${CATS.filter(c=>c.id!=='salary').map(c=>`<option value="${c.id}">${c.n}</option>`).join('')}</select>
+        <input id="bL" type="number" step="0.01" placeholder="Límite" class="w-full px-3 py-2.5 bg-s-50 border border-s-200 rounded-lg text-sm font-medium"/>
+        <div class="flex gap-3"><button onclick="cm()" class="flex-1 py-2.5 rounded-xl bg-s-100 hover:bg-s-200 text-s-600 font-semibold transition text-sm">Cancelar</button><button onclick="savBud()" class="flex-1 py-2.5 rounded-xl bg-s-900 hover:bg-s-800 text-white font-semibold shadow-card transition text-sm">Guardar</button></div>
+      </div>
+    </div>
+  </div>`;
+}
+function savBud(){const cid=document.getElementById('bC').value;const lim=parseFloat(document.getElementById('bL').value);if(!lim||lim<=0)return;if(S.budgets.some(b=>b.cid===cid))return;S.budgets.push({id:uid(),cid,limit:lim});save();cm();render()}
+function delBud(id){if(!confirm('¿Eliminar?'))return;S.budgets=S.budgets.filter(b=>b.id!==id);save();render()}
+
+/* ================================================================
+   UTILIDADES
+================================================================ */
+function cm(){document.getElementById('mHost').innerHTML=''}
+function reset(){if(!confirm('¿Borrar todo?'))return;localStorage.removeItem(SK);resetS();render()}
+
+/* ================================================================
+   INIT
+================================================================ */
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('welcome-greeting').textContent=getGreeting();
+});
+</script>
+</body>
+</html>
