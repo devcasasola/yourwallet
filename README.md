@@ -8,7 +8,8 @@ Una aplicación web moderna y minimalista para gestionar tus finanzas personales
 ### Dashboard Principal
 <div aling="center">
 <img width="1363" height="640" alt="image" src="https://github.com/user-attachments/assets/e496abcc-f1c2-43ca-a841-85bfded78b4d" />
-<p><em>Visualiza tu balance, ingresos y gastos de un vistazo</em></p>
+  
+  <p><em>Visualiza tu balance, ingresos y gastos de un vistazo</em></p>
 </div>
 
 
