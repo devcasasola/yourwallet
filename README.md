@@ -14,7 +14,7 @@ Una aplicación web moderna y minimalista para gestionar tus finanzas personales
 
 ### Gestión de Movimientos
 <div align="center">
-<img width="455" height="569" alt="image" src="https://github.com/user-attachments/assets/c1dbd533-7444-46f5-9e26-208df0ccca8a" />
+<img width="1098" height="390" alt="image" src="https://github.com/user-attachments/assets/ebcdbd2c-5db9-4349-82ed-a069ef82e9e6" />
 
   <p><em>Registra y organiza todos tus movimientos</em></p>
 </div>
