@@ -6,26 +6,30 @@
 Una aplicación web moderna y minimalista para gestionar tus finanzas personales de manera sencilla y efectiva.
 
 ### Dashboard Principal
-<div align="center">
-  <img src="assets/screenshots/dashboard.png" alt="Dashboard principal" width="800"/>
-  <p><em>Visualiza tu balance, ingresos y gastos de un vistazo</em></p>
+<div aling="center">
+<img width="1363" height="640" alt="image" src="https://github.com/user-attachments/assets/e496abcc-f1c2-43ca-a841-85bfded78b4d" />
+<p><em>Visualiza tu balance, ingresos y gastos de un vistazo</em></p>
 </div>
+
 
 ### Gestión de Movimientos
 <div align="center">
-  <img src="assets/screenshots/transactions.png" alt="Movimientos" width="800"/>
+<img width="455" height="569" alt="image" src="https://github.com/user-attachments/assets/c1dbd533-7444-46f5-9e26-208df0ccca8a" />
+
   <p><em>Registra y organiza todos tus movimientos</em></p>
 </div>
 
 ### Cuentas Personalizadas
 <div align="center">
-  <img src="assets/screenshots/accounts.png" alt="Cuentas" width="800"/>
+<img width="446" height="573" alt="image" src="https://github.com/user-attachments/assets/30548da5-138a-4a2d-a761-d1afa42b3e82" />
+
   <p><em>Administra múltiples cuentas con colores personalizados</em></p>
 </div>
 
 ### Analíticas y Gráficos
 <div align="center">
-  <img src="assets/screenshots/analytics.png" alt="Analíticas" width="800"/>
+<img width="1365" height="631" alt="image" src="https://github.com/user-attachments/assets/b09aec70-b530-43da-81ce-df43353e61ca" />
+
   <p><em>Analiza tus patrones de gasto con gráficos interactivos</em></p>
 </div>
 
