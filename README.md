@@ -49,4 +49,4 @@ Una aplicación web moderna y minimalista para gestionar tus finanzas personales
 
 1. Clona el repositorio:
 ```bash
-git clone https://github.com/tu-usuario/walletpro.git
+git clone https://github.com/devcasasola/yourwallet.git
